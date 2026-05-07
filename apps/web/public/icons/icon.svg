@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#6366f1"/>
+  <!-- Book / binder spine -->
+  <rect x="100" y="100" width="312" height="312" rx="28" fill="white" opacity="0.15"/>
+  <!-- Binder rings left bar -->
+  <rect x="148" y="100" width="32" height="312" rx="16" fill="white" opacity="0.9"/>
+  <!-- Cards stack -->
+  <rect x="200" y="136" width="184" height="240" rx="16" fill="white" opacity="0.95"/>
+  <!-- Card highlight lines -->
+  <rect x="220" y="168" width="144" height="12" rx="6" fill="#6366f1" opacity="0.4"/>
+  <rect x="220" y="196" width="100" height="12" rx="6" fill="#6366f1" opacity="0.3"/>
+  <!-- Star on card -->
+  <text x="292" y="310" font-size="80" text-anchor="middle" fill="#6366f1" opacity="0.5">★</text>
+</svg>
