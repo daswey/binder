@@ -87,6 +87,9 @@ router.get('/search', async (req: Request, res: Response) => {
   conditions.push(`c.language = $${idx++}`);
   params.push(language);
 
+  // Exclude Pokemon Pocket cards (set_codes A1, A1A, A2, A2A, A2B, A3, A3A, A3B, A4, A4A …)
+  conditions.push(`c.set_code !~ '^A[0-9]'`);
+
   // By default show only base cards (parallel_id IS NULL).
   // Pass include_variants=true to show all parallels.
   if (include_variants !== 'true') {

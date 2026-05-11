@@ -5,7 +5,7 @@ let socket: Socket | null = null;
 
 export function getSocket(token: string): Socket {
   if (!socket) {
-    socket = io('/', { auth: { token }, transports: ['websocket'] });
+    socket = io(import.meta.env.VITE_API_URL ?? '/', { auth: { token }, transports: ['websocket'] });
   }
   return socket;
 }

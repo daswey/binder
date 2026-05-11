@@ -18,7 +18,7 @@ interface Props {
 export function CardPriceSheet({ card, onClose, onSetAlert, isPro }: Props) {
   const [prices, setPrices] = useState<CardPrices | null>(null);
   const [loadingPrices, setLoadingPrices] = useState(true);
-  const [showConditions, setShowConditions] = useState(false);
+  const [showConditions, setShowConditions] = useState(true);
   const [ebayComps, setEbayComps] = useState<EbayComp[] | null>(null);
   const [ebaySearchUrl, setEbaySearchUrl] = useState<string>('');
   const [loadingEbay, setLoadingEbay] = useState(false);

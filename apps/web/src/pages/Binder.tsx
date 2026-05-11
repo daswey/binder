@@ -41,6 +41,10 @@ const CONDITION_DOT: Record<Condition, string> = {
   NM: 'bg-green-400', LP: 'bg-teal-400', MP: 'bg-amber-400', HP: 'bg-orange-400', Damaged: 'bg-red-500',
 };
 
+const CONDITION_PRICE_FACTOR: Record<string, number> = {
+  NM: 1.0, LP: 0.85, MP: 0.65, HP: 0.4, Damaged: 0.2,
+};
+
 const VERIFY_URLS: Record<string, (cert: string) => string> = {
   PSA: c => `https://www.psacard.com/cert/${c}`,
   CGC: c => `https://www.cgccards.com/certlookup/${c}`,
@@ -638,7 +642,10 @@ function CardRow({ entry, onRemove, onEdit, onPrice }: { entry: UserCard; onRemo
             onClick={onPrice}
             className="text-xs font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full hover:bg-brand/20 transition-colors"
           >
-            €{(card.market_price_eur / 100).toFixed(2)}
+            €{((card.market_price_eur / 100) * (CONDITION_PRICE_FACTOR[cond ?? 'NM'] ?? 1)).toFixed(2)}
+            {cond && cond !== 'NM' && (
+              <span className="text-gray-400 font-normal ml-1">({cond})</span>
+            )}
           </button>
         )}
         <button
