@@ -1,6 +1,6 @@
 [build]
 dockerfilePath = "apps/api/Dockerfile"
+watchPatterns = ["apps/api/**"]
 
 [deploy]
-startCommand = "tsx src/index.ts"
 restartPolicyType = "on_failure"
