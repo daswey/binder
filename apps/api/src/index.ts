@@ -26,8 +26,18 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(helmet());
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  origin: (origin, cb) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return cb(null, true);
+    cb(new Error(`CORS: ${origin} not allowed`));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));
