@@ -28,14 +28,20 @@ const server = http.createServer(app);
 app.use(helmet());
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'https://binder-319w.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Allow requests with no origin (mobile apps, curl, PWA, etc.)
     if (!origin) return cb(null, true);
-    if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return cb(null, true);
+    // Allow vercel preview deployments and localhost
+    if (
+      ALLOWED_ORIGINS.some(o => origin === o) ||
+      origin.endsWith('.vercel.app') ||
+      origin.startsWith('http://localhost')
+    ) return cb(null, true);
     cb(new Error(`CORS: ${origin} not allowed`));
   },
   credentials: true,
