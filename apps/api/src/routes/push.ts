@@ -5,11 +5,15 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+if (process.env.VAPID_SUBJECT && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY,
+  );
+} else {
+  console.warn('[push] VAPID env vars not set — push notifications disabled');
+}
 
 // GET /api/push/vapid-public-key — return public key for client subscription
 router.get('/vapid-public-key', (_req, res: Response) => {
