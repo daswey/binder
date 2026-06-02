@@ -50,13 +50,13 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 // Image proxy for Bandai card images (their CDN blocks hotlinking without Referer)
 app.get('/api/img/bandai', async (req: express.Request, res: express.Response) => {
   const url = req.query.url as string;
-  if (!url || !url.startsWith('https://en.onepiece-cardgame.com/images/')) {
+  if (!url || (!url.startsWith('https://en.onepiece-cardgame.com/images/') && !url.startsWith('https://www.onepiece-cardgame.com/images/'))) {
     return res.status(400).json({ error: 'BadRequest', message: 'Invalid image URL' });
   }
   try {
     const upstream = await fetch(url, {
       headers: {
-        Referer: 'https://en.onepiece-cardgame.com/',
+        Referer: url.startsWith('https://www.onepiece-cardgame.com') ? 'https://www.onepiece-cardgame.com/' : 'https://en.onepiece-cardgame.com/',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       },
     });
