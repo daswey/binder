@@ -11,6 +11,9 @@ export interface User {
   location_label?: string;
   reputation_score?: number;
   trade_count?: number;
+  onboarding_completed?: boolean;
+  onboarding_step?: number;
+  games?: string[];
 }
 
 interface AuthStore {

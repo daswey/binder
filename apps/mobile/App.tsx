@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StatusBar, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { useAuthStore } from './src/store/auth';
 import AuthScreen from './src/screens/AuthScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
 import BinderScreen from './src/screens/BinderScreen';
 import MatchesScreen from './src/screens/MatchesScreen';
 import { MessagesListScreen, ChatScreen } from './src/screens/MessagesScreen';
@@ -111,19 +111,19 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+    <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor="#030712" />
         <NavigationContainer theme={THEME}>
-          {user ? (
-            <MainApp />
-          ) : (
+          {!user ? (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Auth" component={AuthScreen} />
             </Stack.Navigator>
+          ) : !(user as any).onboarding_completed ? (
+            <OnboardingScreen onDone={() => {}} />
+          ) : (
+            <MainApp />
           )}
         </NavigationContainer>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
   );
 }
