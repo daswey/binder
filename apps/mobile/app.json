@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Binder",
+    "slug": "binder",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#030712"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.binder.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6366f1",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "package": "com.binder.app"
+    }
+  }
+}
