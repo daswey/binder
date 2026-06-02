@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch, clearTokens, setTokens } from '../api/client';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   username: string;
@@ -16,15 +16,15 @@ interface User {
 interface AuthStore {
   user: User | null;
   loading: boolean;
-  setUser: (user: User | null) => void;
   fetchMe: () => Promise<void>;
+  login: (access: string, refresh: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   loading: true,
-  setUser: (user) => set({ user }),
+
   fetchMe: async () => {
     const token = await AsyncStorage.getItem('access_token');
     if (!token) { set({ loading: false }); return; }
@@ -35,6 +35,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
       set({ user: null, loading: false });
     }
   },
+
+  login: async (access, refresh) => {
+    await setTokens(access, refresh);
+    const user = await apiFetch<User>('/auth/me');
+    set({ user });
+  },
+
   logout: async () => {
     await clearTokens();
     set({ user: null });

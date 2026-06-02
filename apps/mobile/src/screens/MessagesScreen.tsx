@@ -16,66 +16,74 @@ interface Conversation {
 }
 
 interface Message {
-  id: string; sender_id: string; body: string; type: string;
-  created_at: string;
+  id: string; sender_id: string; body: string; type: string; created_at: string;
 }
 
 function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  const d = Date.now() - new Date(iso).getTime();
+  if (d < 60000) return 'now';
+  if (d < 3600000) return `${Math.floor(d / 60000)}m`;
+  if (d < 86400000) return `${Math.floor(d / 3600000)}h`;
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export function ConversationsScreen() {
+export function MessagesListScreen() {
   const [convs, setConvs] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
 
   useEffect(() => {
     apiFetch<Conversation[]>('/conversations')
-      .then(data => setConvs(data))
+      .then(setConvs)
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Messages</Text>
-      {loading ? <ActivityIndicator color="#6366f1" style={{ marginTop: 40 }} /> : (
-        <FlatList
-          data={convs}
-          keyExtractor={c => c.id}
-          contentContainerStyle={{ padding: 16, gap: 8 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.convItem} onPress={() => navigation.navigate('Chat', { id: item.id })}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.other_participant?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+    <SafeAreaView style={s.container}>
+      <Text style={s.title}>Messages</Text>
+      {loading
+        ? <ActivityIndicator color="#6366f1" style={{ marginTop: 40 }} />
+        : <FlatList
+            data={convs}
+            keyExtractor={c => c.id}
+            contentContainerStyle={s.list}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={s.convRow}
+                onPress={() => navigation.navigate('Chat', {
+                  id: item.id,
+                  title: item.other_participant?.username ?? 'Chat',
+                })}
+              >
+                <View style={s.avatar}>
+                  <Text style={s.avatarTxt}>{item.other_participant?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.convName}>{item.other_participant?.username ?? 'Unknown'}</Text>
+                  {item.last_message && (
+                    <Text style={s.lastMsg} numberOfLines={1}>{item.last_message.body}</Text>
+                  )}
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  {item.last_message && (
+                    <Text style={s.time}>{timeAgo(item.last_message.created_at)}</Text>
+                  )}
+                  {item.unread_count > 0 && (
+                    <View style={s.unread}>
+                      <Text style={s.unreadTxt}>{item.unread_count}</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <Text style={{ fontSize: 44 }}>💬</Text>
+                <Text style={s.emptyTxt}>No conversations yet. Find a match and start trading!</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.convName}>{item.other_participant?.username ?? 'Unknown'}</Text>
-                {item.last_message && (
-                  <Text style={styles.lastMsg} numberOfLines={1}>{item.last_message.body}</Text>
-                )}
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                {item.last_message && <Text style={styles.time}>{timeAgo(item.last_message.created_at)}</Text>}
-                {item.unread_count > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{item.unread_count}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={{ fontSize: 40 }}>💬</Text>
-              <Text style={styles.emptyText}>No conversations yet. Find a match and start trading!</Text>
-            </View>
-          }
-        />
-      )}
+            }
+          />
+      }
     </SafeAreaView>
   );
 }
@@ -85,43 +93,27 @@ export function ChatScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
   const { id } = route.params;
-  const [conv, setConv] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const listRef = useRef<FlatList>(null);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [convData, msgData] = await Promise.all([
-        apiFetch<any>(`/conversations/${id}`),
-        apiFetch<Message[]>(`/conversations/${id}/messages`),
-      ]);
-      setConv(convData);
-      setMessages(msgData);
-      await apiPost(`/conversations/${id}/read`, {});
-    } finally { setLoading(false); }
+  useEffect(() => {
+    navigation.setOptions({ title: route.params?.title ?? 'Chat' });
+    apiFetch<Message[]>(`/conversations/${id}/messages`)
+      .then(msgs => { setMessages(msgs); setLoading(false); })
+      .catch(() => setLoading(false));
+    apiPost(`/conversations/${id}/read`, {}).catch(() => {});
   }, [id]);
 
-  useEffect(() => {
-    loadData();
-    navigation.setOptions({ title: '' });
-  }, [loadData]);
-
-  useEffect(() => {
-    if (conv?.other_participant?.username) {
-      navigation.setOptions({ title: conv.other_participant.username });
-    }
-  }, [conv]);
-
   async function send() {
-    if (!input.trim()) return;
     const body = input.trim();
+    if (!body) return;
     setInput('');
     try {
       const msg = await apiPost<Message>(`/conversations/${id}/messages`, { body });
-      setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      setMessages(p => p.some(m => m.id === msg.id) ? p : [...p, msg]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     }
@@ -130,73 +122,90 @@ export function ChatScreen() {
   const myId = user?.id;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      {loading ? <ActivityIndicator color="#6366f1" style={{ marginTop: 40 }} /> : (
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={m => m.id}
-          contentContainerStyle={{ padding: 16, gap: 8 }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-          renderItem={({ item }) => {
-            const mine = item.sender_id === myId;
-            if (item.type === 'system') {
+    <KeyboardAvoidingView
+      style={cs.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      {loading
+        ? <ActivityIndicator color="#6366f1" style={{ marginTop: 40 }} />
+        : <FlatList
+            ref={listRef}
+            data={messages}
+            keyExtractor={m => m.id}
+            contentContainerStyle={{ padding: 16, gap: 6 }}
+            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+            renderItem={({ item }) => {
+              const mine = item.sender_id === myId;
+              if (item.type === 'system') {
+                return (
+                  <View style={{ alignItems: 'center', marginVertical: 4 }}>
+                    <Text style={cs.sys}>{item.body}</Text>
+                  </View>
+                );
+              }
               return (
-                <View style={{ alignItems: 'center', paddingVertical: 4 }}>
-                  <Text style={styles.systemMsg}>{item.body}</Text>
+                <View style={[cs.row, mine ? cs.rowMine : cs.rowThem]}>
+                  <View style={[cs.bubble, mine ? cs.bubbleMine : cs.bubbleThem]}>
+                    <Text style={cs.bubbleTxt}>{item.body}</Text>
+                    <Text style={cs.bubbleTime}>{timeAgo(item.created_at)}</Text>
+                  </View>
                 </View>
               );
-            }
-            return (
-              <View style={[styles.msgRow, mine ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}>
-                <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleThem]}>
-                  <Text style={styles.bubbleText}>{item.body}</Text>
-                  <Text style={styles.bubbleTime}>{timeAgo(item.created_at)}</Text>
-                </View>
-              </View>
-            );
-          }}
-        />
-      )}
-      <View style={styles.inputRow}>
+            }}
+          />
+      }
+      <View style={cs.bar}>
         <TextInput
-          style={styles.msgInput}
+          style={cs.input}
           value={input}
           onChangeText={setInput}
           placeholder="Type a message…"
           placeholderTextColor="#6b7280"
-          onSubmitEditing={send}
           returnKeyType="send"
+          onSubmitEditing={send}
+          blurOnSubmit={false}
         />
-        <TouchableOpacity style={styles.sendBtn} onPress={send} disabled={!input.trim()}>
-          <Text style={{ color: '#fff', fontSize: 16 }}>➤</Text>
+        <TouchableOpacity
+          style={[cs.sendBtn, !input.trim() && { opacity: 0.4 }]}
+          onPress={send}
+          disabled={!input.trim()}
+        >
+          <Text style={{ color: '#fff', fontSize: 18 }}>➤</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#030712' },
-  title: { fontSize: 24, fontWeight: '700', color: '#fff', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  convItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1f2937', borderRadius: 16, padding: 14, gap: 12 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  convName: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  title: { fontSize: 26, fontWeight: '800', color: '#fff', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  list: { padding: 16, gap: 8 },
+  convRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111827', borderRadius: 16, padding: 14, gap: 12 },
+  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  convName: { color: '#fff', fontWeight: '700', fontSize: 14 },
   lastMsg: { color: '#9ca3af', fontSize: 12, marginTop: 2 },
   time: { color: '#6b7280', fontSize: 11 },
-  unreadBadge: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
-  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { color: '#6b7280', fontSize: 13, textAlign: 'center', maxWidth: 240 },
-  msgRow: { flexDirection: 'row' },
-  bubble: { maxWidth: '75%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
+  unread: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
+  unreadTxt: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  empty: { alignItems: 'center', paddingTop: 64, gap: 12 },
+  emptyTxt: { color: '#6b7280', fontSize: 13, textAlign: 'center', maxWidth: 260, lineHeight: 20 },
+});
+
+const cs = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#030712' },
+  row: { flexDirection: 'row' },
+  rowMine: { justifyContent: 'flex-end' },
+  rowThem: { justifyContent: 'flex-start' },
+  bubble: { maxWidth: '76%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
   bubbleMine: { backgroundColor: '#6366f1', borderBottomRightRadius: 4 },
-  bubbleThem: { backgroundColor: '#1f2937', borderBottomLeftRadius: 4 },
-  bubbleText: { color: '#fff', fontSize: 14 },
-  bubbleTime: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 4 },
-  systemMsg: { backgroundColor: '#1f2937', color: '#9ca3af', fontSize: 12, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  inputRow: { flexDirection: 'row', padding: 12, gap: 8, borderTopWidth: 1, borderTopColor: '#1f2937', backgroundColor: '#030712' },
-  msgInput: { flex: 1, backgroundColor: '#1f2937', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: '#374151' },
-  sendBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
+  bubbleThem: { backgroundColor: '#111827', borderBottomLeftRadius: 4 },
+  bubbleTxt: { color: '#fff', fontSize: 15, lineHeight: 21 },
+  bubbleTime: { color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 3 },
+  sys: { backgroundColor: '#111827', color: '#9ca3af', fontSize: 12, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 12 },
+  bar: { flexDirection: 'row', padding: 12, paddingBottom: 16, gap: 8, borderTopWidth: 1, borderTopColor: '#111827' },
+  input: { flex: 1, backgroundColor: '#111827', borderRadius: 26, paddingHorizontal: 18, paddingVertical: 12, color: '#fff', fontSize: 15, borderWidth: 1, borderColor: '#1f2937' },
+  sendBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#6366f1', alignItems: 'center', justifyContent: 'center' },
 });

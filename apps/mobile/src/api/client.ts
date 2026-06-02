@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API_URL = 'http://10.0.2.2:3001'; // Android emulator → localhost
+// For iOS simulator use: 'http://localhost:3001'
+// For real device use your machine's local IP: 'http://192.168.x.x:3001'
+
 const BASE = `${API_URL}/api`;
 
 async function getTokens() {
@@ -11,7 +14,7 @@ async function getTokens() {
   return { access, refresh };
 }
 
-async function setTokens(access: string, refresh: string) {
+export async function setTokens(access: string, refresh: string) {
   await Promise.all([
     AsyncStorage.setItem('access_token', access),
     AsyncStorage.setItem('refresh_token', refresh),
@@ -69,16 +72,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   return res.json();
 }
 
-export function apiPost<T>(path: string, body: unknown) {
-  return apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) });
-}
+export const apiPost = <T>(path: string, body: unknown) =>
+  apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) });
 
-export function apiPatch<T>(path: string, body: unknown) {
-  return apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
-}
+export const apiPatch = <T>(path: string, body: unknown) =>
+  apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
 
-export function apiDelete<T>(path: string) {
-  return apiFetch<T>(path, { method: 'DELETE' });
-}
-
-export { setTokens };
+export const apiDelete = <T>(path: string) =>
+  apiFetch<T>(path, { method: 'DELETE' });
