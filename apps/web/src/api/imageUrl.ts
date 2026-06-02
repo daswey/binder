@@ -23,8 +23,10 @@ export function formatCardNumber(
   setCardCount?: number | null,
   game?: string | null
 ): string {
-  // One Piece: external_id is already the correct format (OP01-001)
-  if (game === 'one_piece') return externalId;
+  // One Piece: use external_id as the number, append set total if available (OP01-001/121)
+  if (game === 'one_piece') {
+    return setCardCount ? `${externalId}/${setCardCount}` : externalId;
+  }
 
   // Get the raw number — prefer local_id, fall back to parsing external_id
   const raw = localId ?? externalId.split('-').pop() ?? externalId;
