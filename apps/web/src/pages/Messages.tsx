@@ -601,7 +601,7 @@ export function ChatPage() {
     if (!token || !id) return;
     const socket = getSocket(token);
     socket.emit('join_conversation', id);
-    socket.on('message', (msg: Message) => setMessages(prev => [...prev, msg]));
+    socket.on('message', (msg: Message) => setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
     socket.on('conversation_updated', (update: any) => {
       setConv((prev: any) => prev ? { ...prev, ...update } : prev);
     });
