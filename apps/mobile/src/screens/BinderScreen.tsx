@@ -36,11 +36,28 @@ function cardNum(card: Card): string {
   return raw;
 }
 
+type SearchLang = 'EN' | 'DE' | 'JP';
+type SearchGame = '' | 'pokemon' | 'one_piece';
+
+const SEARCH_LANGS: { lang: SearchLang; flag: string }[] = [
+  { lang: 'EN', flag: '🇬🇧' },
+  { lang: 'DE', flag: '🇩🇪' },
+  { lang: 'JP', flag: '🇯🇵' },
+];
+
+const SEARCH_GAMES: { game: SearchGame; label: string }[] = [
+  { game: '', label: 'All' },
+  { game: 'pokemon', label: '⚡ Pokémon' },
+  { game: 'one_piece', label: '☠️ One Piece' },
+];
+
 export default function BinderScreen() {
   const [tab, setTab] = useState<'want' | 'have'>('want');
   const [entries, setEntries] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [searchLang, setSearchLang] = useState<SearchLang>('EN');
+  const [searchGame, setSearchGame] = useState<SearchGame>('');
   const [results, setResults] = useState<Card[]>([]);
   const [searching, setSearching] = useState(false);
   const [addCard, setAddCard] = useState<Card | null>(null);
@@ -60,11 +77,14 @@ export default function BinderScreen() {
     timer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const d = await apiFetch<{ data: Card[] }>(`/cards/search?q=${encodeURIComponent(query)}&limit=20`);
+        const gameParam = searchGame ? `&game=${searchGame}` : '';
+        const d = await apiFetch<{ data: Card[] }>(
+          `/cards/search?q=${encodeURIComponent(query)}&lang=${searchLang}${gameParam}&limit=20`
+        );
         setResults(d.data);
       } finally { setSearching(false); }
     }, 300);
-  }, [query]);
+  }, [query, searchLang, searchGame]);
 
   const shown = entries.filter(e => !e.is_graded && e.status === tab);
   const wantN = entries.filter(e => !e.is_graded && e.status === 'want').length;
@@ -91,6 +111,31 @@ export default function BinderScreen() {
           />
           {searching && <ActivityIndicator color="#6366f1" style={s.spinner} />}
         </View>
+
+        {/* Language filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', gap: 6, paddingRight: 4 }}>
+            {SEARCH_LANGS.map(({ lang, flag }) => (
+              <TouchableOpacity
+                key={lang}
+                style={[s.filterPill, searchLang === lang && s.filterPillOn]}
+                onPress={() => setSearchLang(lang)}
+              >
+                <Text style={[s.filterPillTxt, searchLang === lang && s.filterPillTxtOn]}>{flag} {lang}</Text>
+              </TouchableOpacity>
+            ))}
+            <View style={s.filterDivider} />
+            {SEARCH_GAMES.map(({ game, label }) => (
+              <TouchableOpacity
+                key={game}
+                style={[s.filterPill, searchGame === game && s.filterPillOn]}
+                onPress={() => setSearchGame(game)}
+              >
+                <Text style={[s.filterPillTxt, searchGame === game && s.filterPillTxtOn]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
 
         {/* Search dropdown */}
         {results.length > 0 && (
@@ -322,6 +367,11 @@ const s = StyleSheet.create({
   dropImg: { width: 34, height: 47, borderRadius: 4 },
   dropName: { color: '#fff', fontSize: 13, fontWeight: '600' },
   dropSub: { color: '#9ca3af', fontSize: 11, marginTop: 1 },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#1f2937' },
+  filterPillOn: { backgroundColor: '#6366f1', borderColor: '#6366f1' },
+  filterPillTxt: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
+  filterPillTxtOn: { color: '#fff' },
+  filterDivider: { width: 1, backgroundColor: '#1f2937', marginHorizontal: 4 },
   tabs: { flexDirection: 'row', backgroundColor: '#111827', borderRadius: 12, padding: 4, gap: 4, marginBottom: 8 },
   tab: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center' },
   tabOn: { backgroundColor: '#6366f1' },
