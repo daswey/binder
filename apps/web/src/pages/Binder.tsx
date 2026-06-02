@@ -195,6 +195,7 @@ export function BinderPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLang, setSearchLang] = useState<SearchLang>('EN');
+  const [searchGame, setSearchGame] = useState<'pokemon' | 'one_piece' | ''>('');
   const [searchResults, setSearchResults] = useState<Card[]>([]);
   const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -234,9 +235,10 @@ export function BinderPage() {
       setSearchPage(1);
       try {
         const q = searchQuery.trim();
+        const gameParam = searchGame ? `&game=${searchGame}` : '';
         const url = q
-          ? `/cards/search?q=${encodeURIComponent(q)}&lang=${searchLang}&limit=${SEARCH_LIMIT}&page=1`
-          : `/cards/search?lang=${searchLang}&limit=${SEARCH_LIMIT}&page=1`;
+          ? `/cards/search?q=${encodeURIComponent(q)}&lang=${searchLang}${gameParam}&limit=${SEARCH_LIMIT}&page=1`
+          : `/cards/search?lang=${searchLang}${gameParam}&limit=${SEARCH_LIMIT}&page=1`;
         const data = await apiFetch<{ data: Card[]; total: number }>(url);
         setSearchResults(data.data);
         setSearchTotal(data.total);
@@ -244,7 +246,7 @@ export function BinderPage() {
         setSearching(false);
       }
     }, delay);
-  }, [searchQuery, searchLang, searchFocused]);
+  }, [searchQuery, searchLang, searchFocused, searchGame]);
 
   const loadMoreResults = useCallback(async () => {
     if (loadingMore || searchResults.length >= searchTotal) return;
@@ -252,9 +254,10 @@ export function BinderPage() {
     setLoadingMore(true);
     try {
       const q = searchQuery.trim();
+      const gameParam = searchGame ? `&game=${searchGame}` : '';
       const url = q
-        ? `/cards/search?q=${encodeURIComponent(q)}&lang=${searchLang}&limit=${SEARCH_LIMIT}&page=${nextPage}`
-        : `/cards/search?lang=${searchLang}&limit=${SEARCH_LIMIT}&page=${nextPage}`;
+        ? `/cards/search?q=${encodeURIComponent(q)}&lang=${searchLang}${gameParam}&limit=${SEARCH_LIMIT}&page=${nextPage}`
+        : `/cards/search?lang=${searchLang}${gameParam}&limit=${SEARCH_LIMIT}&page=${nextPage}`;
       const data = await apiFetch<{ data: Card[]; total: number }>(url);
       setSearchResults(prev => [...prev, ...data.data]);
       setSearchPage(nextPage);
@@ -262,7 +265,7 @@ export function BinderPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, searchResults.length, searchTotal, searchPage, searchQuery, searchLang]);
+  }, [loadingMore, searchResults.length, searchTotal, searchPage, searchQuery, searchLang, searchGame]);
 
   const handleDropdownScroll = useCallback(() => {
     const el = dropdownRef.current;
@@ -307,7 +310,7 @@ export function BinderPage() {
           />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
         </div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-2 flex-wrap">
           {SEARCH_LANGS.map(({ lang, flag }) => (
             <button
               key={lang}
@@ -318,6 +321,20 @@ export function BinderPage() {
               }`}
             >
               {flag} {lang}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mb-3">
+          {([['', 'All'], ['pokemon', '⚡ Pokémon'], ['one_piece', '☠️ One Piece']] as const).map(([game, label]) => (
+            <button
+              key={game}
+              type="button"
+              onClick={() => setSearchGame(game as any)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                searchGame === game ? 'bg-brand border-brand text-white' : 'border-gray-700 text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              {label}
             </button>
           ))}
         </div>
