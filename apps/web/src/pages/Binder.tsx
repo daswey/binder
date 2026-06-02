@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserCard, Card, CardVariantSummary, Condition, Language, Edition, GradingCompany,
   CONDITION_LABELS, CONDITION_COLORS, FINISH_LABELS, LANGUAGE_LABELS, EDITION_LABELS } from '@binder/shared';
 import { apiFetch, apiPost, apiDelete, apiPatch } from '../api/client';
-import { cardImageUrl } from '../api/imageUrl';
+import { cardImageUrl, formatCardNumber } from '../api/imageUrl';
 import { GamePill } from '../components/GamePill';
 import { CardPriceSheet } from '../components/CardPriceSheet';
 import { ProSheet } from '../components/ProSheet';
@@ -345,7 +345,7 @@ export function BinderPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <GamePill game={card.game} />
-                    <span className="text-xs text-gray-400">{card.external_id}</span>
+                    <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
                     <span className="text-xs text-gray-500">{card.set_name}</span>
                   </div>
                 </div>
@@ -550,7 +550,7 @@ function SlabRow({ entry, onTap, onRemove }: { entry: UserCard; onTap: () => voi
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <GamePill game={card.game} />
-            <span className="text-xs text-gray-400">{card.external_id}</span>
+            <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
           </div>
           {attrs.length > 0 && (
             <p className="text-xs text-gray-500 mt-0.5">{attrs.join(' · ')}</p>
@@ -619,7 +619,7 @@ function CardRow({ entry, onRemove, onEdit, onPrice }: { entry: UserCard; onRemo
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <GamePill game={card.game} />
-          <span className="text-xs text-gray-400">{card.external_id}</span>
+          <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
         </div>
         {attrs.length > 0 && (
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -784,7 +784,7 @@ function AddCardSheet({ card, defaultStatus, searchLang, onDone, onClose, onLimi
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <GamePill game={card.game} />
                 <span className="text-xs text-gray-400">{card.set_name}</span>
-                <span className="text-xs text-gray-500">{card.external_id}</span>
+                <span className="text-xs text-gray-500">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
               </div>
               <div className="flex items-center gap-3 mt-1">
                 {card.market_price_eur != null && (

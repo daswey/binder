@@ -19,7 +19,8 @@ const RESOLVED_COLS = `
     CASE WHEN c.language != 'EN' THEN _en.set_name END,
     c.set_name
   ) AS set_name,
-  COALESCE(c.image_url, _en.image_url) AS image_url
+  COALESCE(c.image_url, _en.image_url) AS image_url,
+  cs.card_count AS set_card_count
 `;
 
 const EN_FALLBACK_JOIN = `
@@ -29,6 +30,7 @@ const EN_FALLBACK_JOIN = `
     WHERE external_id = c.external_id AND language = 'EN' AND parallel_id IS NULL
     LIMIT 1
   ) _en ON true
+  LEFT JOIN card_sets cs ON cs.id = LOWER(c.set_code) AND cs.language = c.language
 `;
 
 const CARD_WITH_FINISHES = `

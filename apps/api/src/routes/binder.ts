@@ -26,7 +26,9 @@ const CARD_WITH_FINISHES = `
              SELECT json_agg(json_build_object('finish_id', cf.finish_id, 'label', cf.label,
                              'image_url', cf.image_url, 'market_price_eur', cf.market_price_eur))
              FROM card_finishes cf WHERE cf.card_id = c.id
-           ), '[]'::json)
+           ), '[]'::json),
+           'local_id', c.local_id,
+           'set_card_count', cs.card_count
          ) AS card
   FROM user_cards uc
   JOIN cards c ON c.id = uc.card_id
@@ -36,6 +38,7 @@ const CARD_WITH_FINISHES = `
     WHERE external_id = c.external_id AND language = 'EN' AND parallel_id IS NULL
     LIMIT 1
   ) _en ON true
+  LEFT JOIN card_sets cs ON cs.id = LOWER(c.set_code) AND cs.language = c.language
 `;
 
 router.get('/', async (req: AuthRequest, res: Response) => {
