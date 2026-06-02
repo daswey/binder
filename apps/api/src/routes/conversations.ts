@@ -103,6 +103,7 @@ router.get('/:id/messages', async (req: AuthRequest, res: Response) => {
 
 const newConvSchema = z.object({
   match_id: z.string().uuid().optional(),
+  trade_match_id: z.string().uuid().optional(),
   user_id: z.string().uuid().optional(),
 });
 
@@ -110,7 +111,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   const parsed = newConvSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Validation', message: parsed.error.message });
 
-  const { match_id, user_id } = parsed.data;
+  const { user_id } = parsed.data;
+  const match_id = parsed.data.match_id ?? parsed.data.trade_match_id;
   let otherUserId = user_id;
 
   if (match_id) {
