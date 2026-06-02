@@ -13,14 +13,19 @@ export function cardImageUrl(url: string | null | undefined): string | undefined
 }
 
 /**
- * Format card number as "016/162" using local_id and set_card_count.
- * Falls back to the number part of external_id if local_id is missing.
+ * Format card number based on game:
+ * - One Piece: use external_id directly (e.g. "OP01-001")
+ * - Pokémon: "016/162" format using local_id and set_card_count
  */
 export function formatCardNumber(
   externalId: string,
   localId?: string | null,
-  setCardCount?: number | null
+  setCardCount?: number | null,
+  game?: string | null
 ): string {
+  // One Piece: external_id is already the correct format (OP01-001)
+  if (game === 'one_piece') return externalId;
+
   // Get the raw number — prefer local_id, fall back to parsing external_id
   const raw = localId ?? externalId.split('-').pop() ?? externalId;
 

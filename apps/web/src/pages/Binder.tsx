@@ -345,7 +345,7 @@ export function BinderPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <GamePill game={card.game} />
-                    <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
+                    <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count, card.game)}</span>
                     <span className="text-xs text-gray-500">{card.set_name}</span>
                   </div>
                 </div>
@@ -550,7 +550,7 @@ function SlabRow({ entry, onTap, onRemove }: { entry: UserCard; onTap: () => voi
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <GamePill game={card.game} />
-            <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
+            <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count, card.game)}</span>
           </div>
           {attrs.length > 0 && (
             <p className="text-xs text-gray-500 mt-0.5">{attrs.join(' · ')}</p>
@@ -619,7 +619,7 @@ function CardRow({ entry, onRemove, onEdit, onPrice }: { entry: UserCard; onRemo
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <GamePill game={card.game} />
-          <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
+          <span className="text-xs text-gray-400">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count, card.game)}</span>
         </div>
         {attrs.length > 0 && (
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -784,7 +784,7 @@ function AddCardSheet({ card, defaultStatus, searchLang, onDone, onClose, onLimi
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <GamePill game={card.game} />
                 <span className="text-xs text-gray-400">{card.set_name}</span>
-                <span className="text-xs text-gray-500">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count)}</span>
+                <span className="text-xs text-gray-500">{formatCardNumber(card.external_id, (card as any).local_id, (card as any).set_card_count, card.game)}</span>
               </div>
               <div className="flex items-center gap-3 mt-1">
                 {card.market_price_eur != null && (
