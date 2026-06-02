@@ -30,7 +30,7 @@ const EN_FALLBACK_JOIN = `
     WHERE external_id = c.external_id AND language = 'EN' AND parallel_id IS NULL
     LIMIT 1
   ) _en ON true
-  LEFT JOIN card_sets cs ON cs.id = LOWER(c.set_code) AND cs.language = c.language
+  LEFT JOIN card_sets cs ON LOWER(cs.id) = LOWER(c.set_code) AND cs.language = c.language
 `;
 
 const CARD_WITH_FINISHES = `
