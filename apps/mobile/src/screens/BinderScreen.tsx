@@ -6,11 +6,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiFetch, apiPost, apiDelete } from '../api/client';
 
+interface CardVariant {
+  id: string; parallel_id: string; variant_type: string | null;
+  image_url?: string; rarity?: string;
+}
+
 interface Card {
   id: string; name: string; external_id: string; game: string;
   set_name: string; image_url?: string; market_price_eur?: number;
   local_id?: string; set_card_count?: number;
   available_finishes?: { finish_id: string; label: string }[];
+  variant_count?: number;
+  variants?: CardVariant[];
 }
 
 interface UserCard {
@@ -178,7 +185,14 @@ export default function BinderScreen() {
                     : <View style={[s.dropImg, { backgroundColor: '#374151' }]} />
                   }
                   <View style={{ flex: 1 }}>
-                    <Text style={s.dropName} numberOfLines={1}>{item.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={s.dropName} numberOfLines={1}>{item.name}</Text>
+                      {item.variant_count != null && item.variant_count > 0 && (
+                        <View style={s.variantBadge}>
+                          <Text style={s.variantBadgeTxt}>+{item.variant_count}</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={s.dropSub}>{cardNum(item)} · {item.set_name}</Text>
                   </View>
                   {item.market_price_eur != null && (
@@ -281,13 +295,30 @@ function AddModal({ card, defaultStatus, onDone, onClose }: {
   const [condition, setCondition] = useState('NM');
   const [language, setLanguage] = useState('EN');
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(card.id);
   const [busy, setBusy] = useState(false);
+
+  // Build variant options: base card + all variants
+  const variantOptions = card.variants && card.variants.length > 0 ? [
+    { id: card.id, image_url: card.image_url, label: 'Standard', parallel_id: null },
+    ...card.variants.map(v => ({
+      id: v.id,
+      image_url: v.image_url,
+      label: v.variant_type === 'manga_art' ? 'Manga Art' : v.variant_type === 'sp' ? 'SP' : 'Alt Art',
+      parallel_id: v.parallel_id,
+    })),
+  ] : [];
+
+  const displayImage = variantOptions.length > 0
+    ? (variantOptions.find(v => v.id === selectedVariantId)?.image_url ?? card.image_url)
+    : card.image_url;
 
   async function submit() {
     setBusy(true);
     try {
+      const cardId = variantOptions.length > 0 ? selectedVariantId : card.id;
       const entry = await apiPost<UserCard>('/binder', {
-        card_id: card.id, status, quantity,
+        card_id: cardId, status, quantity,
         condition: status === 'have' ? condition : undefined,
         language,
       });
@@ -304,8 +335,8 @@ function AddModal({ card, defaultStatus, onDone, onClose }: {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Card header */}
             <View style={ms.cardRow}>
-              {card.image_url && (
-                <Image source={{ uri: card.image_url }} style={ms.cardThumb} />
+              {displayImage && (
+                <Image source={{ uri: displayImage }} style={ms.cardThumb} />
               )}
               <View style={{ flex: 1 }}>
                 <Text style={ms.cardName}>{card.name}</Text>
@@ -318,6 +349,30 @@ function AddModal({ card, defaultStatus, onDone, onClose }: {
                 )}
               </View>
             </View>
+
+            {/* Variant selector (One Piece) */}
+            {variantOptions.length > 1 && (
+              <>
+                <Text style={ms.label}>Select Variant ({variantOptions.length})</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', gap: 8, paddingRight: 8 }}>
+                    {variantOptions.map(opt => (
+                      <TouchableOpacity
+                        key={opt.id}
+                        onPress={() => setSelectedVariantId(opt.id)}
+                        style={[ms.variantOpt, selectedVariantId === opt.id && ms.variantOptOn]}
+                      >
+                        {opt.image_url
+                          ? <Image source={{ uri: opt.image_url }} style={ms.variantImg} />
+                          : <View style={[ms.variantImg, { backgroundColor: '#1f2937' }]} />
+                        }
+                        <Text style={ms.variantLbl} numberOfLines={1}>{opt.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </>
+            )}
 
             {/* Status */}
             <Text style={ms.label}>Add to</Text>
@@ -391,6 +446,8 @@ const s = StyleSheet.create({
   dropName: { color: '#fff', fontSize: 13, fontWeight: '600' },
   dropSub: { color: '#9ca3af', fontSize: 11, marginTop: 1 },
   moreHint: { color: '#6b7280', fontSize: 11, textAlign: 'center', padding: 8 },
+  variantBadge: { backgroundColor: 'rgba(99,102,241,0.2)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+  variantBadgeTxt: { color: '#a5b4fc', fontSize: 10, fontWeight: '700' },
   filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#1f2937' },
   filterPillOn: { backgroundColor: '#6366f1', borderColor: '#6366f1' },
   filterPillTxt: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
@@ -433,4 +490,8 @@ const ms = StyleSheet.create({
   qNum: { color: '#fff', fontSize: 24, fontWeight: '800', width: 44, textAlign: 'center' },
   btn: { backgroundColor: '#6366f1', borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  variantOpt: { alignItems: 'center', borderRadius: 12, padding: 4, borderWidth: 2, borderColor: 'transparent' },
+  variantOptOn: { borderColor: '#6366f1' },
+  variantImg: { width: 56, height: 78, borderRadius: 6 },
+  variantLbl: { color: '#9ca3af', fontSize: 10, marginTop: 4, maxWidth: 64, textAlign: 'center' },
 });
