@@ -60,6 +60,9 @@ export default function BinderScreen() {
   const [searchGame, setSearchGame] = useState<SearchGame>('');
   const [results, setResults] = useState<Card[]>([]);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchTotal, setSearchTotal] = useState(0);
   const [addCard, setAddCard] = useState<Card | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -71,20 +74,36 @@ export default function BinderScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  function buildUrl(q: string, lang: string, game: string, page: number) {
+    const gameParam = game ? `&game=${game}` : '';
+    return `/cards/search?q=${encodeURIComponent(q)}&lang=${lang}${gameParam}&limit=20&page=${page}`;
+  }
+
   useEffect(() => {
     clearTimeout(timer.current);
-    if (!query.trim()) { setResults([]); return; }
+    if (!query.trim()) { setResults([]); setSearchTotal(0); setSearchPage(1); return; }
     timer.current = setTimeout(async () => {
       setSearching(true);
+      setSearchPage(1);
       try {
-        const gameParam = searchGame ? `&game=${searchGame}` : '';
-        const d = await apiFetch<{ data: Card[] }>(
-          `/cards/search?q=${encodeURIComponent(query)}&lang=${searchLang}${gameParam}&limit=20`
-        );
+        const d = await apiFetch<{ data: Card[]; total: number }>(buildUrl(query, searchLang, searchGame, 1));
         setResults(d.data);
+        setSearchTotal(d.total);
       } finally { setSearching(false); }
     }, 300);
   }, [query, searchLang, searchGame]);
+
+  async function loadMore() {
+    if (loadingMore || results.length >= searchTotal || !query.trim()) return;
+    const next = searchPage + 1;
+    setLoadingMore(true);
+    try {
+      const d = await apiFetch<{ data: Card[]; total: number }>(buildUrl(query, searchLang, searchGame, next));
+      setResults(p => [...p, ...d.data]);
+      setSearchPage(next);
+      setSearchTotal(d.total);
+    } finally { setLoadingMore(false); }
+  }
 
   const shown = entries.filter(e => !e.is_graded && e.status === tab);
   const wantN = entries.filter(e => !e.is_graded && e.status === 'want').length;
@@ -143,12 +162,16 @@ export default function BinderScreen() {
             <FlatList
               data={results}
               keyExtractor={c => c.id}
-              style={{ maxHeight: 260 }}
+              style={{ maxHeight: 300 }}
               keyboardShouldPersistTaps="handled"
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={loadingMore ? <ActivityIndicator color="#6366f1" style={{ padding: 8 }} /> :
+                results.length < searchTotal ? <Text style={s.moreHint}>{results.length}/{searchTotal} — scroll for more</Text> : null}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={s.dropRow}
-                  onPress={() => { setAddCard(item); setQuery(''); setResults([]); }}
+                  onPress={() => { setAddCard(item); setQuery(''); setResults([]); setSearchTotal(0); setSearchPage(1); }}
                 >
                   {item.image_url
                     ? <Image source={{ uri: item.image_url }} style={s.dropImg} />
@@ -367,6 +390,7 @@ const s = StyleSheet.create({
   dropImg: { width: 34, height: 47, borderRadius: 4 },
   dropName: { color: '#fff', fontSize: 13, fontWeight: '600' },
   dropSub: { color: '#9ca3af', fontSize: 11, marginTop: 1 },
+  moreHint: { color: '#6b7280', fontSize: 11, textAlign: 'center', padding: 8 },
   filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#1f2937' },
   filterPillOn: { backgroundColor: '#6366f1', borderColor: '#6366f1' },
   filterPillTxt: { color: '#6b7280', fontSize: 12, fontWeight: '600' },
