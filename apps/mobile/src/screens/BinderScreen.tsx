@@ -99,7 +99,7 @@ export default function BinderScreen() {
     setLoadingMore(true);
     try {
       const d = await apiFetch<{ data: Card[]; total: number }>(buildUrl(query, searchLang, searchGame, next));
-      setResults(p => [...p, ...d.data]);
+      setResults(p => { const ids = new Set(p.map(c => c.id)); return [...p, ...d.data.filter(c => !ids.has(c.id))]; });
       setSearchPage(next);
       setSearchTotal(d.total);
     } finally { setLoadingMore(false); }
